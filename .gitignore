@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+datasets/
+models_saved/
+.env
+node_modules/
