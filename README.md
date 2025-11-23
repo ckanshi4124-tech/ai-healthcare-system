@@ -57,3 +57,16 @@ A **free global healthcare AI assistant** that:
 - Promotes **ethical AI and medical data privacy**
 
 Our goal is to deliver **professional-level AI diagnosis accessibility to everyone**, regardless of geographical or financial limitations.
+
+## 🧠 Tech Stack
+- Python
+- Scikit-Learn
+- TensorFlow / PyTorch
+- Pandas & NumPy
+- Matplotlib / Seaborn
+- FastAPI / Flask
+- React / HTML CSS JS
+- MongoDB
+
+## 🔄 Workflow Diagram (High-Level)
+User → Upload Test Report → Preprocessing → ML Model → Analysis & Prediction → Recommendation & Risk Level → Download Report
