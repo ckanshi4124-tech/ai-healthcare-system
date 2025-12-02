@@ -5,9 +5,9 @@ import pandas as pd
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-# -----------------------
+# ------------------------------
 # Load model + scaler
-# -----------------------
+# ------------------------------
 
 MODEL_PATH = "ML/models_saved/heart_xgboost.pkl"
 SCALER_PATH = "ML/models_saved/heart_scaler.pkl"
@@ -19,12 +19,17 @@ try:
     with open(SCALER_PATH, "rb") as f:
         scaler = pickle.load(f)
 
+    # 🔥 PRINT STORAGE PATHS (you forgot this earlier)
+    print("MODEL PATH:", MODEL_PATH)
+    print("SCALER PATH:", SCALER_PATH)
+
 except Exception as e:
     raise HTTPException(status_code=500, detail=f"Model loading error: {e}")
 
-# -----------------------
-# Input Schema (Request Model)
-# -----------------------
+
+# ------------------------------
+# Input Schema
+# ------------------------------
 
 class HeartInput(BaseModel):
     Age: float
@@ -40,9 +45,10 @@ class HeartInput(BaseModel):
     Smoking: int
     time: int
 
-# -----------------------
+
+# ------------------------------
 # API Router
-# -----------------------
+# ------------------------------
 
 router = APIRouter()
 
@@ -50,23 +56,23 @@ router = APIRouter()
 def predict_heart(data: HeartInput):
 
     try:
-        # CORRECT FEATURE ORDER (MUST MATCH TRAINING)
+        # Must match model training order ***
         feature_order = [
-            "Age", 
-            "Anaemia", 
+            "Age",
+            "Anaemia",
             "CPK",
-            "Diabetes", 
-            "EjectionFraction", 
+            "Diabetes",
+            "EjectionFraction",
             "HighBP",
-            "Platelets", 
-            "SerumCreatinine", 
+            "Platelets",
+            "SerumCreatinine",
             "SerumSodium",
-            "Sex", 
-            "Smoking", 
+            "Sex",
+            "Smoking",
             "time"
         ]
 
-        # Convert input to DataFrame in EXACT SAME ORDER
+        # Convert input to DataFrame
         df = pd.DataFrame([data.dict()])[feature_order]
 
         # Scale

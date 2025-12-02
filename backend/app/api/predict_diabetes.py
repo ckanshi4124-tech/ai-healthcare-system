@@ -1,79 +1,62 @@
-import os
+# backend/app/api/predict_diabetes.py
+from fastapi import APIRouter
+import numpy as np
 import pickle
-import pandas as pd
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+import os
 
 router = APIRouter()
 
 # -----------------------------
-# FIXED PATHS (DO NOT MODIFY)
+# Load Model + Scaler
 # -----------------------------
-PROJECT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
-MODEL_DIR = os.path.join(PROJECT_DIR, "ML", "models_saved")
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
+MODEL_PATH = os.path.join(BASE_DIR, "ML", "models_saved", "diabetes_xgboost.pkl")
+SCALER_PATH = os.path.join(BASE_DIR, "ML", "models_saved", "diabetes_scaler.pkl")
 
-MODEL_PATH = os.path.join(MODEL_DIR, "diabetes_xgboost.pkl")
-SCALER_PATH = os.path.join(MODEL_DIR, "diabetes_scaler.pkl")
+try:
+    with open(MODEL_PATH, "rb") as f:
+        model = pickle.load(f)
+except:
+    model = None
 
-print("MODEL_PATH:", MODEL_PATH)
-print("SCALER_PATH:", SCALER_PATH)
-
-# -----------------------------
-# Load model & scaler
-# -----------------------------
-if not os.path.exists(MODEL_PATH):
-    raise HTTPException(status_code=500, detail=f"Model not found at {MODEL_PATH}")
-
-if not os.path.exists(SCALER_PATH):
-    raise HTTPException(status_code=500, detail=f"Scaler not found at {SCALER_PATH}")
-
-with open(MODEL_PATH, "rb") as f:
-    model = pickle.load(f)
-
-with open(SCALER_PATH, "rb") as f:
-    scaler = pickle.load(f)
+try:
+    with open(SCALER_PATH, "rb") as f:
+        scaler = pickle.load(f)
+except:
+    scaler = None
 
 
-# -----------------------------
-# Input schema
-# -----------------------------
-class DiabetesInput(BaseModel):
-    Pregnancies: float
-    Glucose: float
-    BloodPressure: float
-    SkinThickness: float
-    Insulin: float
-    BMI: float
-    DiabetesPedigreeFunction: float
-    Age: float
+# --------------------------------
+# FIXED ENDPOINT
+# --------------------------------
+@router.post("/predict-diabetes")
+def predict_diabetes(data: dict):
+    if model is None or scaler is None:
+        return {"error": "Model or scaler missing"}
 
+    required_keys = [
+        "pregnancies", "glucose", "blood_pressure", "skin_thickness",
+        "insulin", "bmi", "diabetes_pedigree", "age",
+        "cholesterol", "hdl", "ldl", "triglycerides"
+    ]
 
-# -----------------------------
-# API Route
-# -----------------------------
-@router.post("/predict/diabetes")
-def predict_diabetes(data: DiabetesInput):
+    values = []
+    for k in required_keys:
+        if k not in data:
+            return {"error": f"Missing field: {k}"}
+        try:
+            values.append(float(data[k]))
+        except:
+            return {"error": f"Invalid numeric value for {k}"}
 
-    try:
-        df = pd.DataFrame([data.dict()])
+    arr = np.array(values).reshape(1, -1)
 
-        # ---- ADD THESE 4 FEATURE ENGINEERING LINES ---- #
-        df["BMI_Squared"] = df["BMI"] ** 2
-        df["Age_BMI"] = df["Age"] * df["BMI"]
-        df["Insulin_Glucose_Ratio"] = df["Insulin"] / (df["Glucose"] + 1)
-        df["SkinThickness_Age"] = df["SkinThickness"] * df["Age"]
-        # ------------------------------------------------ #
+    scaled = scaler.transform(arr)
+    pred = model.predict(scaled)[0]
 
-        df_scaled = scaler.transform(df)
+    result = "diabetic" if int(pred) == 1 else "non-diabetic"
 
-        prob = model.predict_proba(df_scaled)[0][1]
-        prediction = int(prob >= 0.5)
-
-        return {
-            "prediction": prediction,
-            "probability": float(prob),
-            "message": "Diabetes detected" if prediction == 1 else "No diabetes detected"
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return {
+        "prediction": result,
+        "raw_output": int(pred)
+    }
