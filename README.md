@@ -83,11 +83,20 @@ ai-healthcare-system/
 
 
 ---
+## 📸 Screenshots
 
+### Dashboard
+![Dashboard](assets/dashboard-ui.png)
+
+### Diabetes Prediction
+![Diabetes](assets/diabetes-form.png)
+
+### Xray Pneumonia prediction
+![Xray](assets/xray-result.png)
 ## ⚙️ How to Run
 
 ### 🔹 Backend
-```bash
+
 cd backend
 pip install -r requirements.txt
 uvicorn app.main:app --reload
@@ -97,7 +106,9 @@ cd healthcare-frontend
 npm install
 npm run dev
 
-🔄 System Workflow
+---
+
+### System Workflow
 
 User Input → Data Preprocessing → ML/DL Model → Prediction → Risk Level → Recommendation Engine → Output
 
@@ -107,12 +118,16 @@ User Input → Data Preprocessing → ML/DL Model → Prediction → Risk Level 
 ⚠️ Minor UI/logic improvements ongoing
 🚀 Continuous improvements in progress
 
-⚠️ Disclaimer
+---
+
+### ⚠️ Disclaimer
 
 This project is built for educational and research purposes only.
 It should NOT be used as a substitute for professional medical advice.
 
-👩‍💻 Author
+--- 
+
+### 👩‍💻 Author
 
 Chitranshi Kulshrestha
 AI/ML Enthusiast 
