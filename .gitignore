@@ -4,3 +4,9 @@ __pycache__/
 datasets/
 .env
 node_modules/
+ocr_uploads/
+xray_temp/
+temp_xray/
+*.png
+*.jpg
+*.pdf
