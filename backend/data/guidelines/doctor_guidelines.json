@@ -1,0 +1,22 @@
+{
+  "anemia": {
+    "high": "Consult a Hematologist",
+    "moderate": "Consult a General Physician if symptoms persist",
+    "low": "No consultation needed"
+  },
+  "diabetes": {
+    "high": "Endocrinologist consultation recommended",
+    "moderate": "Regular monitoring advised",
+    "low": "Doctor consultation not required"
+  },
+  "heart": {
+    "high": "Cardiologist consultation strongly recommended",
+    "moderate": "General physician checkup recommended",
+    "low": "No consultation required"
+  },
+  "ckd": {
+    "high": "Nephrologist consultation required",
+    "moderate": "Monitoring advised",
+    "low": "No consultation needed"
+  }
+}

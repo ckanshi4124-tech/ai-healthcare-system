@@ -1,0 +1,9 @@
+{
+  "fatigue": ["anemia", "diabetes", "thyroid"],
+  "shortness_of_breath": ["anemia", "heart"],
+  "frequent_urination": ["diabetes", "ckd"],
+  "swelling_feet": ["heart", "ckd"],
+  "chest_pain": ["heart"],
+  "dizziness": ["anemia", "heart"],
+  "blurred_vision": ["diabetes"]
+}

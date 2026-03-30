@@ -1,0 +1,22 @@
+{
+  "anemia": [
+    "Sleep 7-8 hours daily",
+    "Eat meals on time",
+    "Avoid heavy workouts until iron improves"
+  ],
+  "diabetes": [
+    "Walk 30 minutes daily",
+    "Avoid sugar drinks",
+    "Reduce stress"
+  ],
+  "heart": [
+    "Avoid stress",
+    "Monitor BP regularly",
+    "Practice deep breathing"
+  ],
+  "ckd": [
+    "Drink 2-3L water unless advised otherwise",
+    "Limit salt",
+    "Avoid painkillers like ibuprofen"
+  ]
+}

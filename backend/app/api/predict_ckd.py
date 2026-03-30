@@ -1,80 +1,100 @@
-# backend/app/api/predict_ckd.py
-
-import os
-import pickle
-import numpy as np
 from fastapi import APIRouter
+from pydantic import BaseModel
+import numpy as np
+import joblib
 
 router = APIRouter()
 
-# ----------------------------------------------------
-# Correct BASE directory
-# ----------------------------------------------------
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
-MODEL_PATH = os.path.join(BASE_DIR, "ML", "models_saved", "ckd_xgboost.pkl")
-SCALER_PATH = os.path.join(BASE_DIR, "ML", "models_saved", "ckd_scaler.pkl")
+model = joblib.load("ML/models_saved/ckd_xgboost.pkl")
+scaler = joblib.load("ML/models_saved/ckd_scaler.pkl")
 
-# ----------------------------------------------------
-# Load model & scaler once
-# ----------------------------------------------------
-model = None
-scaler = None
+class CKDInput(BaseModel):
+    Age: float
+    BloodPressure: float
+    SpecificGravity: float
+    Albumin: float
+    Sugar: float
+    BloodGlucoseRandom: float
+    BloodUrea: float
+    SerumCreatinine: float
+    Sodium: float
+    Potassium: float
+    Hemoglobin: float
+    PCV: float
+    WBC: float
+    RBCC: float
 
-try:
-    with open(MODEL_PATH, "rb") as f:
-        model = pickle.load(f)
-    print("[predict_ckd] CKD model loaded successfully.")
-except Exception as e:
-    print(f"[predict_ckd] ERROR loading CKD model: {e}")
-
-try:
-    with open(SCALER_PATH, "rb") as f:
-        scaler = pickle.load(f)
-    print("[predict_ckd] CKD scaler loaded successfully.")
-except Exception as e:
-    print(f"[predict_ckd] ERROR loading CKD scaler: {e}")
+    RBC: str
+    PusCell: str
+    PusCellClumps: str
+    Bacteria: str
+    Hypertension: str
+    DiabetesMellitus: str
+    CoronaryArteryDisease: str
+    Appetite: str
+    PedalEdema: str
+    Anemia: str
 
 
-# ----------------------------------------------------
-# CKD Prediction API Endpoint
-# ----------------------------------------------------
-@router.post("/predict-ckd")
-def predict_ckd(data: dict):
+def enc_abnormal(v):
+    return 1 if v.lower() == "abnormal" else 0
 
-    # Required order (same as training)
-    keys = [
-        "age", "bp", "sg", "al", "su", "rbc", "pc", "pcc", "ba",
-        "bgr", "bu", "sc", "sod", "pot", "hemo", "pcv",
-        "wbcc", "rbcc", "htn", "dm", "cad", "appet", "pe", "ane"
-    ]
+def enc_present(v):
+    return 1 if v.lower() == "present" else 0
 
-    # safety check
-    if model is None or scaler is None:
-        return {"error": "CKD model or scaler not loaded on server."}
+def enc_yes(v):
+    return 1 if v.lower() == "yes" else 0
 
-    # Validate & convert data
-    values = []
-    for k in keys:
-        if k not in data:
-            return {"error": f"Missing field: {k}"}
+def enc_appetite(v):   # ✅ CORRECT
+    return 1 if v.lower() == "poor" else 0
 
-        try:
-            values.append(float(data[k]))
-        except:
-            return {"error": f"Invalid numeric value for {k}: {data[k]}"}
 
-    arr = np.array(values).reshape(1, -1)
+@router.post("/predict/ckd")
+def predict_ckd(data: CKDInput):
 
-    # Scale input
-    scaled = scaler.transform(arr)
+    features = np.array([[
+        data.Age,
+        data.BloodPressure,
+        data.SpecificGravity,
+        data.Albumin,
+        data.Sugar,
 
-    # Predict
-    pred = model.predict(scaled)[0]
+        enc_abnormal(data.RBC),
+        enc_abnormal(data.PusCell),
+        enc_present(data.PusCellClumps),
+        enc_present(data.Bacteria),
 
-    # Convert to readable output
-    result = "ckd" if int(pred) == 1 else "notckd"
+        data.BloodGlucoseRandom,
+        data.BloodUrea,
+        data.SerumCreatinine,
+        data.Sodium,
+        data.Potassium,
+        data.Hemoglobin,
+        data.PCV,
+        data.WBC,
+        data.RBCC,
+
+        enc_yes(data.Hypertension),
+        enc_yes(data.DiabetesMellitus),
+        enc_yes(data.CoronaryArteryDisease),
+        enc_appetite(data.Appetite),
+        enc_yes(data.PedalEdema),
+        enc_yes(data.Anemia),
+    ]])
+
+    features_scaled = scaler.transform(features)
+
+    prob = float(model.predict_proba(features_scaled)[0][1])
+
+    if prob < 0.3:
+        risk = "Low"
+    elif prob < 0.6:
+        risk = "Moderate"
+    else:
+        risk = "High"
 
     return {
-        "prediction": result,
-        "raw_output": int(pred)
+        "prediction": int(prob >= 0.5),
+        "probability": round(prob, 3),
+        "risk_level": risk
     }

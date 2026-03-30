@@ -2,6 +2,7 @@ import { useState, useContext } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import API from "../services/api";
 import { AuthContext } from "../context/AuthContext";
+import { sanitizeText } from "../utils/sanitize";
 
 export default function Login() {
   const { loginUser } = useContext(AuthContext);
@@ -13,31 +14,48 @@ export default function Login() {
   });
 
   const handleChange = (e) => {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    setForm((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
   };
 
   const handleLogin = async (e) => {
     e.preventDefault();
+
+    const email = sanitizeText(form.email).trim();
+    const password = sanitizeText(form.password);
+
+    if (!email || !password) {
+      alert("Please enter valid email and password.");
+      return;
+    }
+
     try {
       const response = await API.post(
         "/auth/login",
-        new URLSearchParams({
-          username: form.email, // FastAPI requires "username" field
-          password: form.password,
-        }),
         {
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          email,
+          password,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
         }
       );
 
-      // Save user + token to context/localStorage
+      // ✅ Store auth properly
       loginUser(response.data);
 
-      // 🚀 Redirect to Unified Dashboard
+      // ✅ Navigate after login
       navigate("/dashboard");
-
     } catch (err) {
-      alert(err?.response?.data?.detail || "Login Failed!");
+      console.error("Login error:", err.response?.data);
+      alert(
+        err?.response?.data?.detail ||
+          "Login failed. Please check your credentials."
+      );
     }
   };
 
@@ -50,21 +68,23 @@ export default function Login() {
         <h2 className="text-xl font-bold">Login</h2>
 
         <input
-          name="email"
           type="email"
-          className="border p-2 w-full"
+          name="email"
           placeholder="Email"
+          className="border p-2 w-full"
           value={form.email}
           onChange={handleChange}
+          required
         />
 
         <input
-          name="password"
           type="password"
-          className="border p-2 w-full"
+          name="password"
           placeholder="Password"
+          className="border p-2 w-full"
           value={form.password}
           onChange={handleChange}
+          required
         />
 
         <button

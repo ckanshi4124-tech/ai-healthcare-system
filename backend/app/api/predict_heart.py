@@ -81,6 +81,13 @@ def predict_heart(data: HeartInput):
         # Predict
         prob = model.predict_proba(df_scaled)[0][1]
         prediction = int(prob >= 0.5)
+        
+        if prob >= 0.7:
+            risk_level = "HIGH"
+        elif prob >= 0.4:
+            risk_level = "MODERATE"
+        else:
+            risk_level = "LOW"
 
         return {
             "prediction": prediction,

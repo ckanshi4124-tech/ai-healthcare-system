@@ -1,9 +1,17 @@
+// src/main.jsx
 import React from "react";
 import ReactDOM from "react-dom/client";
-import App from "./App.jsx";
-import "./index.css";
 import { BrowserRouter } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext.jsx";
+import App from "./App";
+import { Toaster } from "react-hot-toast";
+import { AuthProvider } from "./context/AuthContext";
+import "./index.css";
+
+// ⭐ Global Frontend Error Listener (Task 4 — Step 3)
+window.onerror = function (msg, url, lineNo, columnNo, error) {
+  console.error("[Frontend Error]", msg);
+  return false; 
+};
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
@@ -11,6 +19,9 @@ ReactDOM.createRoot(document.getElementById("root")).render(
       <AuthProvider>
         <App />
       </AuthProvider>
+
+      {/* Toasts globally */}
+      <Toaster position="top-right" />
     </BrowserRouter>
   </React.StrictMode>
 );

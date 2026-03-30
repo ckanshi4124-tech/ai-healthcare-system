@@ -1,6 +1,7 @@
 import { useState } from "react";
 import API from "../services/api";
 import { Link, useNavigate } from "react-router-dom";
+import { sanitizeObject } from "../utils/sanitize";
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -18,12 +19,28 @@ export default function Signup() {
 
   const registerUser = async (e) => {
     e.preventDefault();
+
+    const cleanData = sanitizeObject(data);
+
+    if (
+      !cleanData.full_name ||
+      !cleanData.email ||
+      !cleanData.password
+    ) {
+      alert("Please enter valid details.");
+      return;
+    }
+
     try {
-      await API.post("/auth/register", data);
-      alert("User Registered Successfully!");
+      await API.post("/auth/register", cleanData);
+      alert("User registered successfully!");
       navigate("/login");
     } catch (err) {
-      alert(err?.response?.data?.detail || "Registration Failed!");
+      console.error(err);
+      alert(
+        err?.response?.data?.detail ||
+          "Registration failed. Please check your details."
+      );
     }
   };
 
@@ -37,31 +54,28 @@ export default function Signup() {
 
         <input
           name="full_name"
-          className="border p-2 w-full"
           placeholder="Full Name"
+          className="border p-2 w-full"
           value={data.full_name}
           onChange={handleChange}
-          required
         />
 
         <input
           name="email"
           type="email"
-          className="border p-2 w-full"
           placeholder="Email"
+          className="border p-2 w-full"
           value={data.email}
           onChange={handleChange}
-          required
         />
 
         <input
           name="password"
           type="password"
-          className="border p-2 w-full"
           placeholder="Password"
+          className="border p-2 w-full"
           value={data.password}
           onChange={handleChange}
-          required
         />
 
         <select

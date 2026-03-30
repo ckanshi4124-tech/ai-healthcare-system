@@ -1,20 +1,25 @@
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
-from sqlalchemy.orm import Session
-import os
-from datetime import datetime
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy.orm import Session
+from datetime import datetime
+import os
+import logging
 
-from backend.app.database.db_setup import SessionLocal
-from backend.app.utils.role_checker import allow_roles
-from backend.app.models.health import HealthRecord
-from backend.app.models.medical_report import MedicalReport  # 👈 ADD THIS IMPORT!
-from backend.app.services.auth_service import decode_access_token
+# ✅ RELATIVE IMPORTS (THIS FIXES YOUR ERROR)
+from ..database.db_setup import SessionLocal
+from ..models.medical_report import MedicalReport
+from ..models.health import HealthRecord
+from ..services.auth_service import decode_access_token
+
+logger = logging.getLogger("patient")
 
 router = APIRouter(prefix="/patient", tags=["Patient Actions"])
-
 security = HTTPBearer()
 
-# 📌 Database Dependency
+
+# ============================================================
+# DB DEPENDENCY
+# ============================================================
 def get_db():
     db = SessionLocal()
     try:
@@ -23,35 +28,41 @@ def get_db():
         db.close()
 
 
-# 📤 Upload Medical Report (Patients Only)
-@router.post("/upload/report")
-def upload_report(
+# ============================================================
+# UPLOAD MEDICAL REPORT
+# ============================================================
+@router.post("/upload-report")
+async def upload_report(
     file: UploadFile = File(...),
-    user=Depends(allow_roles(["patient", "admin"])),
-    db: Session = Depends(get_db)
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db),
 ):
-    allowed_types = ["application/pdf", "image/jpeg", "image/png"]
+    payload = decode_access_token(credentials.credentials)
 
+    if payload["role"] not in ["patient", "admin"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    allowed_types = ["application/pdf", "image/jpeg", "image/jpg", "image/png"]
     if file.content_type not in allowed_types:
-        raise HTTPException(status_code=400, detail="Only PDF, JPG, PNG allowed!")
+        raise HTTPException(status_code=400, detail="Invalid file type")
+
+    contents = await file.read()
+    if len(contents) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large")
 
     upload_dir = "backend/app/uploads"
     os.makedirs(upload_dir, exist_ok=True)
 
-    # Secure & unique file name
     timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
-    extension = file.filename.split(".")[-1]
-    safe_name = f"patient_{user['id']}_{timestamp}.{extension}"
-
+    _, ext = os.path.splitext(file.filename)
+    safe_name = f"patient_{payload['user_id']}_{timestamp}{ext}"
     file_path = os.path.join(upload_dir, safe_name)
 
-    # Save file securely
-    with open(file_path, "wb") as buffer:
-        buffer.write(file.file.read())
+    with open(file_path, "wb") as f:
+        f.write(contents)
 
-    # 📌 Save metadata in DB
     report = MedicalReport(
-        patient_id=user["id"],
+        patient_id=payload["user_id"],
         file_name=safe_name,
         file_type=file.content_type,
     )
@@ -59,45 +70,21 @@ def upload_report(
     db.add(report)
     db.commit()
 
-    return {"message": "Report uploaded & stored securely!", "file": safe_name}
+    return {"message": "Report uploaded successfully", "file": safe_name}
 
 
-# 📝 Submit Symptoms (Patients Only)
-@router.post("/symptoms")
-def submit_symptoms(
-    data: dict,
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
-):
-    token = credentials.credentials
-    payload = decode_access_token(token)
-
-    if payload["role"] != "patient":
-        raise HTTPException(status_code=403, detail="Only patients can submit symptoms")
-
-    new_record = HealthRecord(
-        patient_id=payload["user_id"],
-        symptoms=data.get("symptoms"),
-        remarks=data.get("remarks", "")
-    )
-
-    db.add(new_record)
-    db.commit()
-
-    return {"message": "Symptoms saved successfully!"}
-
-
-# 📜 Get Patient History
+# ============================================================
+# GET PATIENT HISTORY
+# ============================================================
 @router.get("/history")
 def get_patient_history(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    token = credentials.credentials
-    payload = decode_access_token(token)
+    payload = decode_access_token(credentials.credentials)
 
     if payload["role"] != "patient":
-        raise HTTPException(status_code=403, detail="Only patients can view history")
+        raise HTTPException(status_code=403, detail="Access denied")
 
     symptoms = db.query(HealthRecord).filter(
         HealthRecord.patient_id == payload["user_id"]
@@ -115,5 +102,5 @@ def get_patient_history(
         "reports": [
             {"id": r.id, "file": r.file_name, "type": r.file_type}
             for r in reports
-        ]
+        ],
     }

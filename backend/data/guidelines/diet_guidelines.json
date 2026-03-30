@@ -1,0 +1,63 @@
+{
+  "anemia": {
+    "high": [
+      "Increase iron-rich foods like spinach, beetroot, dates, jaggery",
+      "Include legumes: rajma, chole, masoor dal",
+      "Take Vitamin C with meals to improve iron absorption",
+      "Avoid tea/coffee 1 hr before/after meals"
+    ],
+    "moderate": [
+      "Add green leafy vegetables to daily diet",
+      "Include jaggery and dates regularly"
+    ],
+    "low": [
+      "Maintain healthy iron levels with a balanced diet"
+    ]
+  },
+
+  "diabetes": {
+    "high": [
+      "Reduce sugar, refined carbs, and rice",
+      "Switch to whole grains, dal, sabzi",
+      "Avoid aerated drinks and sweets",
+      "Walk 30 minutes daily"
+    ],
+    "moderate": [
+      "Cut down sugar and reduce chapati count",
+      "Avoid junk foods"
+    ],
+    "low": [
+      "Maintain active lifestyle and balanced diet"
+    ]
+  },
+
+  "heart": {
+    "high": [
+      "Follow low-salt, low-oil diet",
+      "Avoid fried foods",
+      "Add omega-3-rich foods like flax seeds & walnuts"
+    ],
+    "moderate": [
+      "Reduce oil intake",
+      "Start daily brisk walking"
+    ],
+    "low": [
+      "Maintain healthy habits and exercise routinely"
+    ]
+  },
+
+  "ckd": {
+    "high": [
+      "Follow low-sodium diet",
+      "Avoid packaged foods",
+      "Limit protein intake: avoid excess dal, chole, rajma"
+    ],
+    "moderate": [
+      "Stay hydrated",
+      "Lower salt intake"
+    ],
+    "low": [
+      "Maintain hydration and active lifestyle"
+    ]
+  }
+}

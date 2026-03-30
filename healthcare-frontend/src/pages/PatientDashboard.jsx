@@ -10,10 +10,6 @@ export default function PatientDashboard() {
       <Link to="/upload-report" className="text-blue-700 underline text-lg">
         📄 Upload Medical Report
       </Link>
-
-      <Link to="/symptoms" className="text-blue-700 underline text-lg">
-        📝 Submit Symptoms
-      </Link>
     </div>
   );
 }

@@ -32,7 +32,7 @@ const HeartPrediction = () => {
     setResult(null);
 
     try {
-      const response = await axios.post("http://127.0.0.1:8000/predict/heart", {
+      const res = await axios.post("http://127.0.0.1:8000/predict/heart", {
         Age: Number(formData.Age),
         Anaemia: Number(formData.Anaemia),
         CPK: Number(formData.CPK),
@@ -47,32 +47,45 @@ const HeartPrediction = () => {
         time: Number(formData.time),
       });
 
-      setResult(response.data);
-    } catch (err) {
-      setError("Something went wrong. Please try again.");
+      setResult(res.data);
+      localStorage.setItem(
+      "lastPrediction",
+      JSON.stringify({
+      disease: "heart",
+      probability: res.data.probability,
+      risk_level: res.data.risk_level
+     })
+   );
+    } catch {
+      setError("Something went wrong. Please check your inputs.");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
-  return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center py-10 px-4">
-      <div className="bg-white shadow-lg p-8 rounded-xl w-full max-w-2xl">
-        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
-          ❤️ Heart Failure Prediction
-        </h2>
+  const isHighRisk = result?.prediction === 1;
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+  return (
+    <div className="min-h-screen bg-gray-100 py-10 px-4">
+      <div className="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-lg">
+        <h2 className="text-3xl font-bold text-center text-blue-700 mb-2">
+           Heart Failure Risk Assessment
+        </h2>
+        <p className="text-center text-gray-600 mb-8">
+          AI-assisted evaluation based on clinical and cardiac parameters
+        </p>
+
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {Object.keys(formData).map((key) => (
-            <div key={key} className="flex flex-col">
-              <label className="text-sm font-semibold mb-1">{key}</label>
+            <div key={key}>
+              <label className="block text-sm font-medium mb-1">{key}</label>
               <input
                 type="number"
                 name={key}
                 value={formData[key]}
                 onChange={handleChange}
                 required
-                className="border p-2 rounded-md"
+                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
               />
             </div>
           ))}
@@ -80,36 +93,42 @@ const HeartPrediction = () => {
           <button
             type="submit"
             disabled={loading}
-            className="col-span-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-md mt-4"
+            className="md:col-span-2 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
           >
-            {loading ? "Predicting..." : "Predict Heart Failure"}
+            {loading ? "Analyzing..." : "Predict Heart Risk"}
           </button>
         </form>
 
-        {/* Error */}
         {error && (
-          <p className="text-red-600 font-semibold text-center mt-4">{error}</p>
+          <p className="text-red-600 text-center mt-4 font-medium">{error}</p>
         )}
 
-        {/* Result */}
         {result && (
-          <div className="mt-6 bg-gray-50 p-4 rounded-lg shadow-inner">
-            <h3 className="text-lg font-bold text-gray-800 text-center mb-2">
-              Prediction Result
+          <div
+            className={`mt-8 p-6 rounded-xl border-2 ${
+              isHighRisk
+                ? "bg-red-50 border-red-600"
+                : "bg-green-50 border-green-600"
+            }`}
+          >
+            <h3
+              className={`text-2xl font-semibold flex items-center gap-2 mb-3 ${
+                isHighRisk ? "text-red-700" : "text-green-700"
+              }`}
+            >
+              {isHighRisk ? "⚠️ High Heart Failure Risk" : "✅ Low Heart Failure Risk"}
             </h3>
 
-            <p className="text-center text-gray-700">
-              <strong>Prediction:</strong>{" "}
-              {result.prediction === 1 ? "High Risk" : "Low Risk"}
+            <p className="text-gray-800 mb-2">
+              <strong>Clinical Interpretation:</strong>{" "}
+              {isHighRisk
+                ? "Model indicates a high likelihood of heart failure. Immediate medical consultation is advised."
+                : "Model suggests low risk based on the provided clinical parameters."}
             </p>
 
-            <p className="text-center text-gray-700">
-              <strong>Probability:</strong>{" "}
-              {(result.probability * 100).toFixed(2)}%
-            </p>
-
-            <p className="text-center text-gray-700 mt-1">
-              <strong>Message:</strong> {result.message}
+            <p className="text-sm text-gray-600 italic mt-3">
+              This prediction is AI-assisted and must be confirmed by a qualified
+              cardiologist.
             </p>
           </div>
         )}

@@ -13,7 +13,6 @@ export default function AnemiaPrediction() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
 
-  // Handle Input Change
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -21,7 +20,6 @@ export default function AnemiaPrediction() {
     });
   };
 
-  // Submit Prediction Request
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -37,95 +35,68 @@ export default function AnemiaPrediction() {
       });
 
       setResult(res.data);
+      
+      localStorage.setItem(
+      "lastPrediction",
+      JSON.stringify({
+      disease: "anemia",
+      probability: res.data.probability,
+      risk_level: res.data.risk_level
+      })
+    );
     } catch (err) {
-      setError("Something went wrong. Please check your input.");
+      setError("Something went wrong. Please check your inputs.");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
+
+  const isAnemia = result?.prediction === 1;
+
+  // ✅ Normalize once, display everywhere
+  const riskPercent =
+    result?.probability !== undefined
+      ? (result.probability * 100).toFixed(2)
+      : null;
 
   return (
     <div className="min-h-screen bg-gray-100 flex justify-center py-10 px-4">
-      <div className="w-full max-w-2xl bg-white p-8 shadow-xl rounded-xl">
-        <h1 className="text-3xl font-bold text-center text-blue-600 mb-6">
-          Anemia Prediction
+      <div className="w-full max-w-3xl bg-white p-8 rounded-xl shadow-xl">
+        <h1 className="text-3xl font-semibold text-center text-blue-700 mb-2">
+          Anemia Risk Assessment
         </h1>
-
-        <p className="text-gray-600 text-center mb-6">
-          Enter the required blood parameters to predict whether anemia is detected.
+        <p className="text-center text-gray-600 mb-8">
+          AI-assisted evaluation based on hematological parameters
         </p>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Hemoglobin */}
-          <div>
-            <label className="block text-gray-700 font-medium mb-1">
-              Hemoglobin (g/dL)
-            </label>
-            <input
-              type="number"
-              step="0.1"
-              name="Hemoglobin"
-              value={formData.Hemoglobin}
-              onChange={handleChange}
-              required
-              className="w-full p-3 border rounded-lg"
-            />
-          </div>
+          {[
+            { label: "Hemoglobin (g/dL)", name: "Hemoglobin" },
+            { label: "MCH (pg)", name: "MCH" },
+            { label: "MCHC (g/dL)", name: "MCHC" },
+            { label: "MCV (fL)", name: "MCV" },
+          ].map((field) => (
+            <div key={field.name}>
+              <label className="block text-gray-700 font-medium mb-1">
+                {field.label}
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                name={field.name}
+                value={formData[field.name]}
+                onChange={handleChange}
+                required
+                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-blue-50"
+              />
+            </div>
+          ))}
 
-          {/* MCH */}
-          <div>
-            <label className="block text-gray-700 font-medium mb-1">
-              MCH (pg)
-            </label>
-            <input
-              type="number"
-              step="0.1"
-              name="MCH"
-              value={formData.MCH}
-              onChange={handleChange}
-              required
-              className="w-full p-3 border rounded-lg"
-            />
-          </div>
-
-          {/* MCHC */}
-          <div>
-            <label className="block text-gray-700 font-medium mb-1">
-              MCHC (g/dL)
-            </label>
-            <input
-              type="number"
-              step="0.1"
-              name="MCHC"
-              value={formData.MCHC}
-              onChange={handleChange}
-              required
-              className="w-full p-3 border rounded-lg"
-            />
-          </div>
-
-          {/* MCV */}
-          <div>
-            <label className="block text-gray-700 font-medium mb-1">
-              MCV (fL)
-            </label>
-            <input
-              type="number"
-              step="0.1"
-              name="MCV"
-              value={formData.MCV}
-              onChange={handleChange}
-              required
-              className="w-full p-3 border rounded-lg"
-            />
-          </div>
-
-          {/* Submit Button */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition"
+            className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
           >
             {loading ? "Predicting..." : "Predict Anemia"}
           </button>
@@ -133,34 +104,37 @@ export default function AnemiaPrediction() {
 
         {/* Error */}
         {error && (
-          <p className="text-red-500 text-center mt-4 font-medium">{error}</p>
+          <p className="text-red-600 text-center mt-4 font-medium">{error}</p>
         )}
 
-        {/* Result */}
+        {/* Result Panel */}
         {result && (
-          <div className="mt-8 p-5 bg-gray-50 border rounded-xl">
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">
-              Prediction Result:
+          <div
+            className={`mt-8 p-6 rounded-xl border-2 ${
+              isAnemia
+                ? "bg-red-50 border-red-600"
+                : "bg-green-50 border-green-600"
+            }`}
+          >
+            <h2
+              className={`text-2xl font-semibold mb-3 flex items-center gap-2 ${
+                isAnemia ? "text-red-700" : "text-green-700"
+              }`}
+            >
+              {isAnemia ? "⚠️ Anemia Detected" : "✅ No Anemia Detected"}
             </h2>
 
-            <p className="text-gray-700">
-              <strong>Prediction:</strong>{" "}
-              {result.prediction === 1 ? (
-                <span className="text-red-600 font-bold">Anemia Detected</span>
-              ) : (
-                <span className="text-green-600 font-bold">
-                  Normal Hemoglobin Levels
-                </span>
-              )}
+            <p className="text-gray-700 mb-3">
+              <strong>Clinical Interpretation:</strong>{" "}
+              {isAnemia
+                ? "Findings suggest reduced red blood cell indices consistent with anemia."
+                : "Hematological parameters are within normal reference range."}
             </p>
 
-            <p className="text-gray-700 mt-2">
-              <strong>Probability:</strong>{" "}
-              {(result.probability * 100).toFixed(2)}%
-            </p>
-
-            <p className="text-gray-700 mt-2">
-              <strong>Message:</strong> {result.message}
+            <p className="text-sm text-gray-600 italic">
+              This prediction is AI-assisted and should be validated with
+              laboratory tests and consultation with a qualified medical
+              professional.
             </p>
           </div>
         )}

@@ -50,6 +50,13 @@ def predict_anemia(data: AnemiaInput):
     pred = model.predict(scaled)[0]
     prob = model.predict_proba(scaled)[0][1]
 
+    if prob >= 0.7:
+        risk_level = "HIGH"
+    elif prob >= 0.4:
+        risk_level = "MODERATE"
+    else:
+        risk_level = "LOW"
+    
     return {
         "prediction": int(pred),
         "probability": float(prob),

@@ -1,182 +1,178 @@
 import React, { useState } from "react";
-import API from "../services/api";
+import axios from "axios";
 
-export default function CkdPrediction() {
-  const initial = {
-    age: "", bp: "", sg: "", al: "", su: "",
-    rbc: "1", pc: "1", pcc: "0", ba: "0",
-    bgr: "", bu: "", sc: "", sod: "", pot: "",
-    hemo: "", pcv: "", wbcc: "", rbcc: "",
-    htn: "0", dm: "0", cad: "0", appet: "1", pe: "0", ane: "0"
-  };
+const categoricalOptions = {
+  RBC: ["normal", "abnormal"],
+  PusCell: ["normal", "abnormal"],
+  PusCellClumps: ["present", "notpresent"],
+  Bacteria: ["present", "notpresent"],
+  Hypertension: ["yes", "no"],
+  DiabetesMellitus: ["yes", "no"],
+  CoronaryArteryDisease: ["yes", "no"],
+  Appetite: ["good", "poor"],
+  PedalEdema: ["yes", "no"],
+  Anemia: ["yes", "no"],
+};
 
-  const [form, setForm] = useState(initial);
-  const [result, setResult] = useState(null);
+const CkdPrediction = () => {
+  const [formData, setFormData] = useState({
+    Age: "",
+    BloodPressure: "",
+    SpecificGravity: "",
+    Albumin: "",
+    Sugar: "",
+    BloodGlucoseRandom: "",
+    BloodUrea: "",
+    SerumCreatinine: "",
+    Sodium: "",
+    Potassium: "",
+    Hemoglobin: "",
+    PCV: "",
+    WBC: "",
+    RBCC: "",
+    RBC: "",
+    PusCell: "",
+    PusCellClumps: "",
+    Bacteria: "",
+    Hypertension: "",
+    DiabetesMellitus: "",
+    CoronaryArteryDisease: "",
+    Appetite: "",
+    PedalEdema: "",
+    Anemia: "",
+  });
+
   const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState("");
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((s) => ({ ...s, [name]: value }));
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handlePredict = async () => {
-    setResult(null);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     setLoading(true);
+    setError("");
+    setResult(null);
+
     try {
-      // convert all values to numbers before sending
-      const cleaned = {};
-      Object.keys(form).forEach((k) => {
-        // allow empty -> NaN will cause backend to error with friendly message
-        cleaned[k] = form[k] === "" ? "" : Number(form[k]);
-      });
+      const payload = Object.fromEntries(
+        Object.entries(formData).map(([k, v]) => [
+          k,
+          isNaN(v) ? v : Number(v),
+        ])
+      );
 
-      const res = await API.post("/predict-ckd", cleaned);
+      const res = await axios.post(
+        "http://127.0.0.1:8000/predict/ckd",
+        payload
+      );
 
-      if (res.data?.error) {
-        alert("Server error: " + res.data.error);
-      } else if (res.data?.prediction) {
-        setResult(res.data.prediction);
-      } else {
-        alert("Unexpected response from server. Check backend logs.");
-      }
+      setResult(res.data);
+      localStorage.setItem(
+      "lastPrediction",
+      JSON.stringify({
+      disease: "ckd",
+      probability: res.data.probability,
+      risk_level: res.data.risk_level
+     })
+    );
+
     } catch (err) {
-      console.error(err);
-      alert("Prediction failed. Check backend (see terminal logs).");
+      setError("Prediction failed. Please verify inputs.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">CKD Prediction</h1>
+    <div className="min-h-screen bg-gray-100 py-10 px-4">
+      <div className="max-w-5xl mx-auto bg-white p-8 rounded-xl shadow-lg">
+        <h2 className="text-3xl font-bold text-center text-blue-700 mb-2">
+          Chronic Kidney Disease Risk Assessment
+        </h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {[
-          ["age","Age"],
-          ["bp","BP (mm Hg)"],
-          ["sg","Specific Gravity"],
-          ["al","Albumin"],
-          ["su","Sugar"],
-          ["bgr","Blood Glucose Random"],
-          ["bu","Blood Urea"],
-          ["sc","Serum Creatinine"],
-          ["sod","Sodium"],
-          ["pot","Potassium"],
-          ["hemo","Hemoglobin"],
-          ["pcv","PCV"],
-          ["wbcc","WBCC"],
-          ["rbcc","RBCC"]
-        ].map(([field, label]) => (
-          <div key={field}>
-            <label className="block text-sm text-gray-700 mb-1">{label}</label>
-            <input
-              type="number"
-              name={field}
-              value={form[field]}
-              onChange={handleChange}
-              className="w-full border p-2 rounded"
-            />
-          </div>
-        ))}
+        <p className="text-center text-gray-600 mb-8">
+          Early risk screening based on renal & biochemical parameters
+        </p>
 
-        {/* Dropdowns */}
-        <div>
-          <label className="block text-sm text-gray-700 mb-1">RBC</label>
-          <select name="rbc" value={form.rbc} onChange={handleChange} className="w-full border p-2 rounded">
-            <option value="1">Normal</option>
-            <option value="0">Abnormal</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm text-gray-700 mb-1">PC (Pus Cell)</label>
-          <select name="pc" value={form.pc} onChange={handleChange} className="w-full border p-2 rounded">
-            <option value="1">Normal</option>
-            <option value="0">Abnormal</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm text-gray-700 mb-1">PCC (Pus Cell Clumps)</label>
-          <select name="pcc" value={form.pcc} onChange={handleChange} className="w-full border p-2 rounded">
-            <option value="0">None</option>
-            <option value="1">Present</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm text-gray-700 mb-1">BA (Bacteria)</label>
-          <select name="ba" value={form.ba} onChange={handleChange} className="w-full border p-2 rounded">
-            <option value="0">None</option>
-            <option value="1">Present</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm text-gray-700 mb-1">Hypertension</label>
-          <select name="htn" value={form.htn} onChange={handleChange} className="w-full border p-2 rounded">
-            <option value="0">No</option>
-            <option value="1">Yes</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm text-gray-700 mb-1">Diabetes</label>
-          <select name="dm" value={form.dm} onChange={handleChange} className="w-full border p-2 rounded">
-            <option value="0">No</option>
-            <option value="1">Yes</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm text-gray-700 mb-1">CAD</label>
-          <select name="cad" value={form.cad} onChange={handleChange} className="w-full border p-2 rounded">
-            <option value="0">No</option>
-            <option value="1">Yes</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm text-gray-700 mb-1">Appetite</label>
-          <select name="appet" value={form.appet} onChange={handleChange} className="w-full border p-2 rounded">
-            <option value="1">Good</option>
-            <option value="0">Poor</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm text-gray-700 mb-1">Pedal Edema</label>
-          <select name="pe" value={form.pe} onChange={handleChange} className="w-full border p-2 rounded">
-            <option value="0">No</option>
-            <option value="1">Yes</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm text-gray-700 mb-1">Anemia</label>
-          <select name="ane" value={form.ane} onChange={handleChange} className="w-full border p-2 rounded">
-            <option value="0">No</option>
-            <option value="1">Yes</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="mt-6">
-        <button
-          onClick={handlePredict}
-          disabled={loading}
-          className="bg-indigo-700 text-white px-6 py-2 rounded disabled:opacity-60"
+        <form
+          onSubmit={handleSubmit}
+          className="grid grid-cols-1 md:grid-cols-2 gap-5"
         >
-          {loading ? "Predicting..." : "Predict"}
-        </button>
-      </div>
+          {Object.keys(formData).map((key) => (
+            <div key={key}>
+              <label className="block text-sm font-medium mb-1">{key}</label>
 
-      {result && (
-        <div className="mt-6 p-4 bg-gray-100 rounded text-xl font-semibold">
-          Result: {String(result).toUpperCase()}
+              {categoricalOptions[key] ? (
+                <select
+                  name={key}
+                  value={formData[key]}
+                  onChange={handleChange}
+                  required
+                  className="w-full p-3 border rounded-lg"
+                >
+                  <option value="">Select</option>
+                  {categoricalOptions[key].map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="number"
+                  step="any"
+                  name={key}
+                  value={formData[key]}
+                  onChange={handleChange}
+                  required
+                  className="w-full p-3 border rounded-lg"
+                />
+              )}
+            </div>
+          ))}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="md:col-span-2 bg-blue-600 text-white py-3 rounded-lg font-semibold"
+          >
+            {loading ? "Analyzing..." : "Assess Risk"}
+          </button>
+        </form>
+
+        {error && (
+          <p className="text-red-600 text-center mt-4 font-medium">{error}</p>
+        )}
+
+              {result && (
+        <div className={`mt-6 p-6 rounded-xl border ${
+          result.risk_level === "High"
+            ? "bg-red-50 border-red-500"
+            : result.risk_level === "Moderate"
+            ? "bg-yellow-50 border-yellow-500"
+            : "bg-green-50 border-green-500"
+        }`}>
+          <h2 className="text-xl font-bold mb-2">
+            {result.risk_level} CKD Risk
+          </h2>
+
+          <p className="mb-2">
+            <strong>Confidence:</strong>{" "}
+            {(result.probability * 100).toFixed(1)}%
+          </p>
+
+          <p className="text-sm text-gray-600">
+            This prediction is AI-assisted and must be confirmed by a nephrologist.
+          </p>
         </div>
       )}
-    </div>
-  );
+
+    </div>  
+  </div>     
+);
 }
+
+export default CkdPrediction;

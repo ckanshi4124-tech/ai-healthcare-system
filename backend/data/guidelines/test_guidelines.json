@@ -1,0 +1,22 @@
+{
+  "anemia": {
+    "high": ["CBC", "Serum Ferritin", "Iron Profile"],
+    "moderate": ["CBC"],
+    "low": []
+  },
+  "diabetes": {
+    "high": ["HbA1c", "Fasting Blood Sugar", "Post-Prandial Blood Sugar"],
+    "moderate": ["Fasting Blood Sugar"],
+    "low": []
+  },
+  "heart": {
+    "high": ["ECG", "Lipid Profile", "Echocardiogram"],
+    "moderate": ["ECG"],
+    "low": []
+  },
+  "ckd": {
+    "high": ["Serum Creatinine", "Kidney Ultrasound", "Urine Albumin"],
+    "moderate": ["Serum Creatinine"],
+    "low": []
+  }
+}

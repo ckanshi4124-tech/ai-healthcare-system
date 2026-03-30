@@ -1,0 +1,35 @@
+version: "3.9"
+
+services:
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: healthcare_backend
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    restart: always
+    networks:
+      - ai_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./healthcare-frontend
+      dockerfile: Dockerfile
+    container_name: healthcare_frontend
+    ports:
+      - "5173:80"
+    restart: always
+    networks:
+      - ai_net
+
+networks:
+  ai_net:
+    driver: bridge
